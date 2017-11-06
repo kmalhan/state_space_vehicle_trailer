@@ -1,6 +1,9 @@
 import datetime
 import json
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib import animation
 
 """
 Class implementation of state space model for vehicle and trailer
@@ -15,14 +18,14 @@ class StateSpaceModel:
         self.L = 0.0
         self.L1 = 0.0
         self.L2 = 0.0
-        self.x = 0.0
-        self.y = 0.0
-        self.heading_rad = 0.0
-        self.hitch_rad = 0.0
+        self.sample_number = 50
+        self.x = np.zeros(self.sample_number + 1)
+        self.y = np.zeros(self.sample_number + 1)
+        self.heading_rad = np.zeros(self.sample_number + 1)
+        self.hitch_rad = np.zeros(self.sample_number + 1)
         self.v = 0.0
         self.steering_rad = 0.0
         self.sample_time = 0.0
-        self.sample_number = 0
 
     """
     Load vehicle configuration setting
@@ -40,10 +43,10 @@ class StateSpaceModel:
     """
     def setup_state_space(self):
         # Setup Initial Stage
-        self.x = 0.0
-        self.y = 0.0
-        self.heading_rad = 0.0
-        self.hitch_rad = 0.0
+        self.x[0] = 0.0
+        self.y[0] = 0.0
+        self.heading_rad[0] = 0.0
+        self.hitch_rad[0] = 0.0
         self.v = 1.0
         self.steering_rad = 10 * (np.pi / 180)
         self.sample_time = 0.1
@@ -51,33 +54,39 @@ class StateSpaceModel:
 
         self.log('[Control]\t v: ', self.v, ', steering: ', self.steering_rad * (180 / np.pi))
 
-        self.log('[INITIAL]\t x: ', self.x, ', y: ', self.y,
-                 ', heading: ', self.heading_rad * (180/np.pi),
-                 ', hitch: ', self.hitch_rad * (180/np.pi))
+        self.log('[INITIAL]\t x: ', self.x[0], ', y: ', self.y[0],
+                 ', heading: ', self.heading_rad[0] * (180/np.pi),
+                 ', hitch: ', self.hitch_rad[0] * (180/np.pi))
 
         # Perform loop for given period of time
         for i in range(0, self.sample_number):
-            self.loop_state_space()
-            self.log('[Step', i, ']\t x: ', self.x, ', y: ', self.y,
-                     ', heading: ', self.heading_rad * (180 / np.pi),
-                     ', hitch: ', self.hitch_rad * (180 / np.pi))
+            self.loop_state_space(i)
+            self.log('[Step', i+1, ']\t x: ', self.x[i+1], ', y: ', self.y[i+1],
+                     ', heading: ', self.heading_rad[i+1] * (180 / np.pi),
+                     ', hitch: ', self.hitch_rad[i+1] * (180 / np.pi))
         self.log('Completed...')
 
     """
     Loop part of state space model
     """
-    def loop_state_space(self):
-        x_dot = self.v * np.cos(self.heading_rad)
-        y_dot = self.v * np.sin(self.heading_rad)
+    def loop_state_space(self, it):
+        x_dot = self.v * np.cos(self.heading_rad[it])
+        y_dot = self.v * np.sin(self.heading_rad[it])
         heading_dot = self.v * self.L * np.tan(self.steering_rad)
-        hitch_p1 = (self.L2 + self.L1 * np.cos(self.hitch_rad)) / self.L2
-        hitch_p2 = (np.sin(self.hitch_rad) / self.L2) * self.v
+        hitch_p1 = (self.L2 + self.L1 * np.cos(self.hitch_rad[it])) / self.L2
+        hitch_p2 = (np.sin(self.hitch_rad[it]) / self.L2) * self.v
         hitch_dot = hitch_p1 * heading_dot - hitch_p2
 
-        self.x += x_dot * self.sample_time
-        self.y += y_dot * self.sample_time
-        self.heading_rad += heading_dot * self.sample_time
-        self.hitch_rad += hitch_dot * self.sample_time
+        self.x[it+1] = self.x[it] + x_dot * self.sample_time
+        self.y[it+1] = self.y[it] + y_dot * self.sample_time
+        self.heading_rad[it+1] = self.heading_rad[it] + heading_dot * self.sample_time
+        self.hitch_rad[it+1] = self.hitch_rad[it] + hitch_dot * self.sample_time
+
+    """
+    Animation of vehicle-Trailer movement
+    """
+    def animate_movement(self):
+        pass
 
     """
     Print output with current time
