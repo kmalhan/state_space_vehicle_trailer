@@ -1,0 +1,6 @@
+# Pycharm project file
+.idea/
+# Build files
+build
+dist
+state_space_vehicle_trailer.egg-info
