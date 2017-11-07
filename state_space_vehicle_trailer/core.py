@@ -51,6 +51,7 @@ class StateSpaceModel:
         self.steering_rad = 10 * (np.pi / 180)
         self.sample_time = 0.1
         self.sample_number = 50
+        # TODO: Update array size based on this new sample size
 
         self.log('[Control]\t v: ', self.v, ', steering: ', self.steering_rad * (180 / np.pi))
 
@@ -83,10 +84,42 @@ class StateSpaceModel:
         self.hitch_rad[it+1] = self.hitch_rad[it] + hitch_dot * self.sample_time
 
     """
-    Animation of vehicle-Trailer movement
+    Animate animation sub-function
     """
-    def animate_movement(self):
-        pass
+    def animate_movement(self, i):
+        self.vehicle.set_width(1.0)
+        self.vehicle.set_height(1.0)
+        self.vehicle.set_xy([self.x[i], self.y[i]])
+        self.vehicle._angle = -np.rad2deg(self.heading_rad[i])
+        return self.vehicle, self.trailer,
+
+    """
+    Animate init sub-function
+    """
+    def init_movement(self):
+        self.ax.add_patch(self.vehicle)
+        self.ax.add_patch(self.trailer)
+        return self.vehicle, self.trailer,
+
+    """
+    Visualization
+    """
+    def visualization(self):
+        fig = plt.figure()
+        plt.axis('equal')
+        plt.grid()
+        self.ax = fig.add_subplot(111)
+        self.ax.set_xlim(-20, 20)
+        self.ax.set_ylim(-20, 20)
+        self.vehicle = patches.Rectangle((0, 0), 0, 0, fc='y')
+        self.trailer = patches.Rectangle((0, 0), 0, 0, fc='b')
+
+        anim = animation.FuncAnimation(fig, self.animate_movement,
+                                init_func=self.init_movement,
+                                frames=self.sample_number+1,
+                                interval=250,
+                                blit=True)
+        plt.show()
 
     """
     Print output with current time
@@ -101,3 +134,4 @@ if __name__ == "__main__":
     state_space_model = StateSpaceModel()
     state_space_model.load_vehicle_config()
     state_space_model.setup_state_space()
+    state_space_model.visualization()
